@@ -46,7 +46,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
     let iskeyword = await buffer.getOption('iskeyword') as string
     keywordsMap[uri] = iskeyword
   })
-  client.start()
 
   client.onReady().then(() => {
 
@@ -59,6 +58,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
         workspace.showMessage(`highlight server exited with ${code}`)
       }
       if (stack) {
+        // tslint:disable-next-line:no-console
         console.error(stack)
       }
     })
@@ -79,7 +79,5 @@ export async function activate(context: ExtensionContext): Promise<void> {
     console.error(`highlight server start failed: ${e.message}`)
   })
 
-  subscriptions.push(
-    services.registLanguageClient(client)
-  )
+  subscriptions.push(services.registLanguageClient(client))
 }

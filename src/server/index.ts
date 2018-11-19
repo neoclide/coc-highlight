@@ -1,9 +1,8 @@
-import { Range, ColorInformation, createConnection, DidChangeConfigurationParams, DocumentColorRequest, DocumentHighlight, DocumentHighlightRequest, NotificationType, Position, RequestType, TextDocument, TextDocuments, TextDocumentSyncKind, ColorPresentationRequest, ColorPresentation } from 'vscode-languageserver'
-import Uri from 'vscode-uri'
 import Color from 'color'
-import { Chars } from './chars'
-import { parseDocumentColors } from './colors'
-import { DocumentSymbol, Settings } from './types'
+import { ColorInformation, ColorPresentation, ColorPresentationRequest, createConnection, DidChangeConfigurationParams, DidChangeTextDocumentNotification, DidChangeTextDocumentParams, DocumentColorRequest, DocumentHighlight, DocumentHighlightRequest, NotificationType, Position, Range, RequestType, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver'
+import Uri from 'vscode-uri'
+import Document from './document'
+import { Settings } from './types'
 
 namespace FetchKeywordRequest {
   export const type = new RequestType<
@@ -13,10 +12,7 @@ namespace FetchKeywordRequest {
     void>('highlight/iskeyword')
 }
 
-const charsMap: Map<string, Chars> = new Map()
-const documentSymbolsMap: Map<string, DocumentSymbol[]> = new Map()
-const documentColorsMap: Map<string, ColorInformation[]> = new Map()
-
+const documentMap: Map<string, Document> = new Map()
 const settings: Settings = { highlightEnable: true, colorsEnable: true, disableLanguages: [] }
 const exitCalled = new NotificationType<[number, string], void>(
   'highlight/exitCalled'
@@ -58,6 +54,11 @@ function trace(message: string, verbose?: string): void {
 }
 
 let connection = createConnection()
+// tslint:disable-next-line:no-console
+console.log = connection.console.log.bind(connection.console)
+// tslint:disable-next-line:no-console
+console.error = connection.console.error.bind(connection.console)
+
 connection.console.info(`Highlight server running in node ${process.version}`)
 
 let documents: TextDocuments = new TextDocuments()
@@ -65,50 +66,40 @@ let documents: TextDocuments = new TextDocuments()
 // and close on the connection
 documents.listen(connection)
 
-async function parseDocument(document: TextDocument): Promise<void> {
-  if (!settings.highlightEnable && !settings.colorsEnable) return
-  if (isDisabled(document.languageId)) return
-  let u = Uri.parse(document.uri)
+documents.onDidOpen(async event => {
+  let { document } = event
+  let { uri } = document
+  let u = Uri.parse(uri)
   // filter invalid scheme
   if (['quickfix', 'term', 'nofile'].indexOf(u.scheme) != -1) return
-  let { uri } = document
-  let chars: Chars
-  if (charsMap.has(uri)) {
-    chars = charsMap.get(uri)
-  } else {
-    let iskeyword = await Promise.resolve(connection.sendRequest(FetchKeywordRequest.type, document.uri))
-    chars = new Chars(iskeyword)
-  }
-  let symbols = chars.matchSymbols(document)
-  documentSymbolsMap.set(uri, symbols)
-  if (settings.colorsEnable) {
-    documentColorsMap.set(uri, parseDocumentColors(document, symbols))
-  }
-}
-
-documents.onDidOpen(event => {
-  parseDocument(event.document).catch(e => {
-    trace(e.stack)
-  })
+  if (isDisabled(document.languageId)) return
+  let iskeyword = await Promise.resolve(connection.sendRequest(FetchKeywordRequest.type, uri))
+  let doc = new Document(document, iskeyword, settings)
+  documentMap.set(uri, doc)
 })
 
-documents.onDidChangeContent(event => {
-  parseDocument(event.document).catch(e => {
-    trace(e.stack)
-  })
+connection.onNotification(DidChangeTextDocumentNotification.type, (p: DidChangeTextDocumentParams) => {
+  let { uri } = p.textDocument
+  let doc = documentMap.get(uri)
+  if (!doc) return
+  doc.applyContentChanges(p.contentChanges, p.textDocument.version)
+  doc.update()
 })
 
 documents.onDidClose(event => {
   let { uri } = event.document
-  documentColorsMap.delete(uri)
-  documentSymbolsMap.delete(uri)
+  let doc = documentMap.get(uri)
+  if (!doc) return
+  doc.dispose()
+  documentMap.delete(uri)
 })
 
-connection.onRequest(DocumentHighlightRequest.type, ({ textDocument, position }): DocumentHighlight[] => {
+connection.onRequest(DocumentHighlightRequest.type, async ({ textDocument, position }): Promise<DocumentHighlight[]> => {
   let { uri } = textDocument
   if (!settings.highlightEnable) return []
-  let symbols = documentSymbolsMap.get(uri)
-  if (!symbols) return []
+  let doc = documentMap.get(uri)
+  if (!doc) return []
+  let symbols = await doc.documentSymbols
   let curr = symbols.find(o => positionInRange(position, o.range) == 0)
   if (!curr) return []
   let text = curr.text
@@ -118,9 +109,12 @@ connection.onRequest(DocumentHighlightRequest.type, ({ textDocument, position })
   })
 })
 
-connection.onRequest(DocumentColorRequest.type, ({ textDocument }): ColorInformation[] => {
+connection.onRequest(DocumentColorRequest.type, async ({ textDocument }): Promise<ColorInformation[]> => {
+  if (!settings.colorsEnable) return []
   let { uri } = textDocument
-  return settings.colorsEnable ? documentColorsMap.get(uri) : []
+  let doc = documentMap.get(uri)
+  if (!doc) return []
+  return await doc.colors
 })
 
 connection.onRequest(ColorPresentationRequest.type, (params): ColorPresentation[] => {
@@ -136,12 +130,12 @@ connection.onDidChangeConfiguration((change: DidChangeConfigurationParams): void
   let { highlight } = change.settings
   settings.highlightEnable = highlight.document.enable
   settings.colorsEnable = highlight.colors.enable
-  settings.disableLanguages = highlight.disableLanguages
-  if (!settings.highlightEnable) {
-    documentSymbolsMap.clear()
-  }
-  if (!settings.colorsEnable) {
-    documentColorsMap.clear()
+  let disableLanguages: string[] = settings.disableLanguages = highlight.disableLanguages
+  for (let doc of documentMap.values()) {
+    if (disableLanguages.indexOf(doc.languageId) !== -1) {
+      doc.dispose()
+      documentMap.delete(doc.uri)
+    }
   }
 })
 
@@ -150,7 +144,7 @@ connection.onInitialize(_params => {
     capabilities: {
       textDocumentSync: {
         openClose: true,
-        change: TextDocumentSyncKind.Full
+        change: TextDocumentSyncKind.Incremental
       },
       documentHighlightProvider: true,
       colorProvider: true

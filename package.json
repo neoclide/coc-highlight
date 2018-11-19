@@ -1,6 +1,6 @@
 {
   "name": "coc-highlight",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Highlight extension for coc.nvim",
   "main": "lib/index.js",
   "publisher": "chemzqm",
@@ -69,6 +69,7 @@
     "@chemzqm/tslint-config": "^1.0.17",
     "@types/color": "^3.0.0",
     "@types/color-name": "^1.1.0",
+    "@types/debounce": "^3.0.0",
     "@types/node": "^10.12.9",
     "coc.nvim": "^0.0.32",
     "rimraf": "^2.6.2",
@@ -78,6 +79,7 @@
   "dependencies": {
     "color": "^3.1.0",
     "color-name": "^1.1.4",
+    "debounce": "^1.2.0",
     "tslib": "^1.9.3",
     "vscode-languageserver": "^5.1.0",
     "vscode-languageserver-protocol": "^3.13.0",

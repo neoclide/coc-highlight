@@ -128,6 +128,11 @@
   dependencies:
     "@types/color-convert" "*"
 
+"@types/debounce@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@types/debounce/-/debounce-3.0.0.tgz#ea4290f6e2d7ab99464c93b4a69b843d0993b181"
+  integrity sha512-SbehVj+zL0QFTufW3HP/Xvwr/kFWw1sFMLCvmyJdp5Xegbo81sqA2tByWlyeryvSwWBrY4drpLOtGPh0fkxjCQ==
+
 "@types/node@^10.12.9":
   version "10.12.9"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.9.tgz#a07bfa74331471e1dc22a47eb72026843f7b95c8"
