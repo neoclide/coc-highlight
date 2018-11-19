@@ -23,7 +23,7 @@ In your vim/neovim, run command:
 
 ## Usage
 
-To enable highlight on `CursorHold` with [coc.nvim](https://github.com/neoclide/coc.nvim), add:
+To enable highlight current symbol on `CursorHold`, add:
 
 ```vim
 autocmd CursorHold * silent call CocActionAsync('highlight')
