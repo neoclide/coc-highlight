@@ -39,6 +39,20 @@ To disable coc provide color highlight, add:
 
 to your `settings.json`.
 
+To pick a different color, use command:
+
+```
+:call CocAction('pickColor')
+```
+
+**Note:** only works on Mac or have python gtk module installed.
+
+To pick a different color presentation, use command:
+
+```
+:call CocAction('colorPresentation')
+```
+
 ## Options
 
 - `highlight.disableLanguages`, list of filetypes to ignore for this extension.
