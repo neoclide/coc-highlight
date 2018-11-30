@@ -52,10 +52,8 @@ export default class Document {
 
   public get colors(): Promise<ColorInformation[]> {
     if (this.version == this._parsedVersion) return Promise.resolve(this._colors)
-    console.log('version:' + this.version + ' ' + this._parsedVersion)
     return new Promise(resolve => {
       setTimeout(() => {
-        console.log('send result')
         resolve(this._colors)
       }, 200)
     })
