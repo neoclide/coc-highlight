@@ -24,7 +24,7 @@ export default class Document {
     this.chars = new Chars(iskeyword)
     this.update = debounce(() => {
       this._update()
-    }, 300)
+    }, 100)
     this._update()
   }
 
@@ -46,7 +46,7 @@ export default class Document {
     return new Promise(resolve => {
       setTimeout(() => {
         resolve(this._documentSymbols)
-      }, 200)
+      }, 150)
     })
   }
 
@@ -55,7 +55,7 @@ export default class Document {
     return new Promise(resolve => {
       setTimeout(() => {
         resolve(this._colors)
-      }, 200)
+      }, 150)
     })
   }
 
