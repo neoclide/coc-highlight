@@ -32,7 +32,7 @@ function findColors(document: TextDocument, regex: RegExp): ColorInformation[] {
   while (match !== null) {
     const start = match.index
     try {
-      const c = new Color(match[0])
+      const c = new Color(match[0].toLowerCase())
       result.push({
         color: { red: c.red() / 255, green: c.green() / 255, blue: c.blue() / 255, alpha: c.alpha() },
         range: Range.create(document.positionAt(start), document.positionAt(start + match[0].length))
