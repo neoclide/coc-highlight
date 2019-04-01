@@ -63,11 +63,15 @@ To pick a different color presentation, use command:
 
 ## F.A.Q
 
-Q: Why color highlight is not shown on my vim?
+**Q:** Why color highlight is not shown on my vim?
 
-A: First, make sure `"coc.preferences.colorSupport"` is not `false` in your
+**A:** First, make sure `"coc.preferences.colorSupport"` is not `false` in your
 coc-sttings.json, then make sure you have `set termguicolors` in your `.vimrc`,
 and your terminal support true color.
+
+**Q:** How to change highlight of the current symbol.
+
+**A:** All you need is overwrite the highlight group, checkout `:h coc-highlights`
 
 ## License
 
