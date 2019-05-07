@@ -1,6 +1,5 @@
-import { ExtensionContext, LanguageClient, ServerOptions, workspace, services, TransportKind, LanguageClientOptions } from 'coc.nvim'
+import { ExtensionContext, Uri, LanguageClient, ServerOptions, workspace, services, TransportKind, LanguageClientOptions } from 'coc.nvim'
 import { RequestType, NotificationType } from 'vscode-languageserver-protocol'
-import Uri from 'vscode-uri'
 
 namespace FetchKeywordRequest {
   export const type = new RequestType<

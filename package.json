@@ -10,7 +10,7 @@
     "colors"
   ],
   "engines": {
-    "coc": "^0.0.32"
+    "coc": "^0.0.66"
   },
   "scripts": {
     "clean": "rimraf lib",
@@ -82,7 +82,6 @@
     "debounce": "^1.2.0",
     "tslib": "^1.9.3",
     "vscode-languageserver": "^5.1.0",
-    "vscode-languageserver-protocol": "^3.13.0",
-    "vscode-uri": "^1.0.6"
+    "vscode-languageserver-protocol": "^3.13.0"
   }
 }

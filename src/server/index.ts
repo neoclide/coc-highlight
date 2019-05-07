@@ -1,7 +1,7 @@
 import Color from 'color'
 import { ColorInformation, ColorPresentation, ColorPresentationRequest, createConnection, DidChangeConfigurationParams, DidChangeTextDocumentNotification, DidChangeTextDocumentParams, DocumentColorRequest, DocumentHighlight, DocumentHighlightRequest, NotificationType, Position, Range, RequestType, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver'
-import Uri from 'vscode-uri'
 import Document from './document'
+import { Uri } from 'coc.nvim'
 import { Settings } from './types'
 
 namespace FetchKeywordRequest {
