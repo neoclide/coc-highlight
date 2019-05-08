@@ -42,8 +42,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   workspace.documents.forEach(async doc => {
     let { buffer, uri } = doc
-    let iskeyword = await buffer.getOption('iskeyword') as string
-    keywordsMap[uri] = iskeyword
+    try {
+      let iskeyword = await buffer.getOption('iskeyword') as string
+      keywordsMap[uri] = iskeyword
+    } catch (e) {
+      // noop
+    }
   })
 
   client.onReady().then(() => {
@@ -70,8 +74,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
       let { bufnr } = doc
       let loaded = await workspace.nvim.call('bufloaded', bufnr) as number
       if (loaded != 1) return
-      let iskeyword = await doc.buffer.getOption('iskeyword') as string
-      keywordsMap[doc.uri] = iskeyword
+      try {
+        let iskeyword = await doc.buffer.getOption('iskeyword') as string
+        keywordsMap[doc.uri] = iskeyword
+      } catch (e) {
+        // noop
+      }
     }, null, subscriptions)
   }, e => {
     // tslint:disable-next-line:no-console
