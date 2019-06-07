@@ -1,5 +1,5 @@
-import { ExtensionContext, Uri, LanguageClient, ServerOptions, workspace, services, TransportKind, LanguageClientOptions } from 'coc.nvim'
-import { RequestType, NotificationType } from 'vscode-languageserver-protocol'
+import { ExtensionContext, LanguageClient, LanguageClientOptions, ServerOptions, services, TransportKind, workspace } from 'coc.nvim'
+import { NotificationType, RequestType } from 'vscode-languageserver-protocol'
 
 namespace FetchKeywordRequest {
   export const type = new RequestType<
@@ -31,7 +31,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   }
 
   let clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: '*' }],
+    documentSelector: [{ scheme: 'file' }],
     synchronize: {
       configurationSection: 'highlight'
     },
@@ -68,9 +68,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
     workspace.onDidOpenTextDocument(async document => {
       let doc = workspace.getDocument(document.uri)
-      if (!doc) return
-      let { scheme } = Uri.parse(doc.uri)
-      if (['quickfix', 'term', 'nofile'].indexOf(scheme) != -1) return
+      if (!doc || doc.buftype != '') return
       let { bufnr } = doc
       let loaded = await workspace.nvim.call('bufloaded', bufnr) as number
       if (loaded != 1) return
