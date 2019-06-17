@@ -71,7 +71,7 @@
     "@types/color-name": "^1.1.1",
     "@types/debounce": "^3.0.0",
     "@types/node": "^11.13.10",
-    "coc.nvim": "^0.0.66-next.1",
+    "coc.nvim": "^0.0.67",
     "rimraf": "^2.6.3",
     "tslint": "^5.16.0",
     "typescript": "^3.4.4"
