@@ -4,3 +4,4 @@ tslint.json
 *.map
 server
 yarn.lock
+tests
