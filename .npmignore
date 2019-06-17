@@ -2,3 +2,5 @@ src
 tsconfig.json
 tslint.json
 *.map
+server
+yarn.lock

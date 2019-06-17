@@ -18,7 +18,7 @@ const keywordsMap: { [uri: string]: string } = {}
 export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
   const config = workspace.getConfiguration('highlight')
-  const file = context.asAbsolutePath('./lib/server/index.js')
+  const file = context.asAbsolutePath('./lib/server.js')
 
   let serverOptions: ServerOptions = {
     module: file,

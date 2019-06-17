@@ -1,7 +1,6 @@
 import Color from 'color'
 import { ColorInformation, ColorPresentation, ColorPresentationRequest, createConnection, DidChangeConfigurationParams, DidChangeTextDocumentNotification, DidChangeTextDocumentParams, DocumentColorRequest, DocumentHighlight, DocumentHighlightRequest, NotificationType, Position, Range, RequestType, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver'
 import Document from './document'
-import Uri from 'vscode-uri'
 import { Settings } from './types'
 
 namespace FetchKeywordRequest {
@@ -69,9 +68,7 @@ documents.listen(connection)
 documents.onDidOpen(async event => {
   let { document } = event
   let { uri } = document
-  let u = Uri.parse(uri)
   // filter invalid scheme
-  if (['quickfix', 'term', 'nofile'].indexOf(u.scheme) != -1) return
   if (isDisabled(document.languageId)) return
   let iskeyword = await Promise.resolve(connection.sendRequest(FetchKeywordRequest.type, uri))
   let doc = new Document(document, iskeyword, settings)
