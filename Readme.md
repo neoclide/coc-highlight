@@ -4,7 +4,7 @@ Provide default highlight for [coc.nvim](https://github.com/neoclide/coc.nvim),
 including document highlight (highlight of current document symbol) and colors
 highlight.
 
-<img width="536" alt="screen shot 2018-11-19 at 7 56 47 pm" src="https://user-images.githubusercontent.com/251450/48705891-75e27f80-ec35-11e8-91ac-ee684b937e8c.png">
+<img width="480" alt="Screen Shot 2019-07-01 at 9 11 33 AM" src="https://user-images.githubusercontent.com/251450/60405074-979ae080-9be0-11e9-8039-b9a48fd8b5ad.png">
 
 ## Install
 
@@ -59,7 +59,6 @@ To pick a different color presentation, use command:
 - `highlight.document.enable`, set to `false` to disable document symbol
   highlight.
 - `highlight.colors,enable`, set to `false` to disable color highlight.
-
 
 ## F.A.Q
 
