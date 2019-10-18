@@ -58,7 +58,7 @@ To pick a different color presentation, use command:
 - `highlight.disableLanguages`, list of filetypes to ignore for this extension.
 - `highlight.document.enable`, set to `false` to disable document symbol
   highlight.
-- `highlight.colors,enable`, set to `false` to disable color highlight.
+- `highlight.colors.enable`, set to `false` to disable color highlight.
 
 ## F.A.Q
 
