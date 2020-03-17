@@ -83,6 +83,5 @@ export async function activate(context: ExtensionContext): Promise<void> {
     // tslint:disable-next-line:no-console
     console.error(`highlight server start failed: ${e.message}`)
   })
-  client.start()
   subscriptions.push(services.registLanguageClient(client))
 }
