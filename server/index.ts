@@ -12,10 +12,15 @@ namespace FetchKeywordRequest {
 }
 
 const documentMap: Map<string, Document> = new Map()
-const settings: Settings = { highlightEnable: true, colorsEnable: true, disableLanguages: [] }
 const exitCalled = new NotificationType<[number, string], void>(
   'highlight/exitCalled'
 )
+export const settings: Settings = {
+  highlightEnable: true,
+  colorsEnable: true,
+  colorNamesEnable: true,
+  disableLanguages: [],
+}
 
 const nodeExit = process.exit
 process.exit = ((code?: number): void => {
@@ -127,6 +132,7 @@ connection.onDidChangeConfiguration((change: DidChangeConfigurationParams): void
   let { highlight } = change.settings
   settings.highlightEnable = highlight.document.enable
   settings.colorsEnable = highlight.colors.enable
+  settings.colorNamesEnable = highlight.colorNames.enable
   let disableLanguages: string[] = settings.disableLanguages = highlight.disableLanguages
   for (let doc of documentMap.values()) {
     if (disableLanguages.indexOf(doc.languageId) !== -1) {
