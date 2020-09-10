@@ -47,7 +47,7 @@
           "items": {
             "type": "string"
           },
-          "description": "list of filetypes to ignore."
+          "description": "List of filetypes to ignore."
         },
         "highlight.document.enable": {
           "type": "boolean",
@@ -57,7 +57,12 @@
         "highlight.colors.enable": {
           "type": "boolean",
           "default": true,
-          "description": "set to false to disable color highlight."
+          "description": "Set to false to disable color highlight."
+        },
+        "highlight.colorNames.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Set to false to disable highlight of color names."
         }
       }
     }
