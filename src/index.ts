@@ -1,5 +1,4 @@
-import { ExtensionContext, LanguageClient, LanguageClientOptions, ServerOptions, services, TransportKind, workspace } from 'coc.nvim'
-import { NotificationType, RequestType } from 'vscode-languageserver-protocol'
+import { ExtensionContext, LanguageClient, LanguageClientOptions, NotificationType, RequestType, ServerOptions, services, TransportKind, window, workspace } from 'coc.nvim';
 
 namespace FetchKeywordRequest {
   export const type = new RequestType<
@@ -58,7 +57,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
     client.onNotification(exitCalled, ([code, stack]): void => {
       if (code != 0) {
-        workspace.showMessage(`highlight server exited with ${code}`)
+        window.showMessage(`highlight server exited with ${code}`)
       }
       if (stack) {
         // tslint:disable-next-line:no-console

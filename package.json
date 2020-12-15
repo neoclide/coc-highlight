@@ -10,7 +10,7 @@
     "colors"
   ],
   "engines": {
-    "coc": "^0.0.66"
+    "coc": "^0.0.79"
   },
   "scripts": {
     "clean": "rimraf lib",
@@ -76,19 +76,19 @@
     "@types/color-name": "^1.1.1",
     "@types/debounce": "^3.0.0",
     "@types/node": "^11.13.10",
-    "coc.nvim": "^0.0.67",
-    "rimraf": "^2.6.3",
-    "ts-loader": "^6.0.3",
-    "tslint": "^5.16.0",
-    "typescript": "^3.4.4",
-    "webpack": "^4.34.0",
-    "webpack-cli": "^3.3.4",
+    "coc.nvim": "^0.0.79-next.6",
     "color": "^3.1.1",
     "color-name": "^1.1.4",
     "debounce": "^1.2.0",
+    "rimraf": "^2.6.3",
+    "ts-loader": "^6.0.3",
     "tslib": "^1.9.3",
+    "tslint": "^5.16.0",
+    "typescript": "^3.4.4",
     "vscode-languageserver": "^5.3.0-next.5",
-    "vscode-languageserver-protocol": "^3.15.0-next.4"
+    "vscode-languageserver-protocol": "^3.15.0-next.4",
+    "webpack": "^4.34.0",
+    "webpack-cli": "^3.3.4"
   },
   "dependencies": {}
 }
