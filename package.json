@@ -15,7 +15,7 @@
   "scripts": {
     "clean": "rimraf lib",
     "build": "webpack",
-    "prepare": "npx npm-run-all clean build"
+    "prepare": "webpack"
   },
   "activationEvents": [
     "*"
@@ -71,7 +71,6 @@
   "license": "MIT",
   "devDependencies": {
     "@chemzqm/tsconfig": "^0.0.3",
-    "@chemzqm/tslint-config": "^1.0.18",
     "@types/color": "^3.0.0",
     "@types/color-name": "^1.1.1",
     "@types/debounce": "^3.0.0",
