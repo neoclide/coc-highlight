@@ -628,10 +628,10 @@ cliui@^4.0.0:
     strip-ansi "^4.0.0"
     wrap-ansi "^2.0.0"
 
-coc.nvim@^0.0.79-next.6:
-  version "0.0.79-next.6"
-  resolved "https://registry.yarnpkg.com/coc.nvim/-/coc.nvim-0.0.79-next.6.tgz#0b8846d86ba1eec49e80cb4633a98a1c53154198"
-  integrity sha512-JoeROpQheh/wKxZYexF8UFhqZZZnbzpSwjvafWxi+XU49FTksb+meWxMg43Lt66BkqiHFex7UJhwhG5GO2zuUQ==
+coc.nvim@^0.0.79-next.18:
+  version "0.0.79-next.18"
+  resolved "https://registry.yarnpkg.com/coc.nvim/-/coc.nvim-0.0.79-next.18.tgz#48ad533290270f595f2a68bd414dcfce325faf78"
+  integrity sha512-tTSY2ZPhQyhdQ0uYnZc+nr8SMRODF/PKYe6YzL5DFS3cQ5wq9OoalODygP1DFLRWgIB3Jc+G2PVviqqaafnT+Q==
 
 code-point-at@^1.0.0:
   version "1.1.0"
