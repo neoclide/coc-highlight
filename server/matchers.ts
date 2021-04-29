@@ -4,7 +4,7 @@ import { Color as VSColor, ColorInformation, Range, TextDocument } from 'vscode-
 
 const names = Object.keys(webColors)
 const colorHex = /(?<!&|\w)((?:#)([a-f0-9]{6}([a-f0-9]{2})?|[a-f0-9]{3}([a-f0-9]{1})?))\b/gi
-const colorFunctions = /(?:\b(rgb|hsl)a?\([\d]{1,3}%?,\s*[\d]{1,3}%?,\s*[\d]{1,3}%?(,\s*\d?\.?\d+)?\))/gi
+const colorFunctions = /(?:\b(rgb|hsl)a?\([\d]{1,3}(\.\d+)?%?,\s*[\d]{1,3}(\.\d+)?%?,\s*[\d]{1,3}(\.\d+)?%?(,\s*\d?\.?\d+)?\))/gi
 const colorHwb = /(?:\b(hwb)\(\d+,\s*(100|0*\d{1,2})%,\s*(100|0*\d{1,2})%(,\s*0?\.?\d+)?\))/gi
 
 export function getNameColor(word: string): VSColor | null {
