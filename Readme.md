@@ -29,7 +29,8 @@ To enable highlight current symbol on `CursorHold`, add:
 autocmd CursorHold * silent call CocActionAsync('highlight')
 ```
 
-to your `.vimrc`.
+to your `.vimrc` or use the [coc_current_word plugin](https://github.com/IngoMeyer441/coc_current_word) which provides
+configurable delayed highlighting independently from the user's `updatetime` setting.
 
 To disable coc provide color highlight, add:
 
