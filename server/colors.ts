@@ -1,6 +1,6 @@
 import { TextDocument, ColorInformation } from 'vscode-languageserver'
 import { DocumentSymbol } from './types'
-import { findColorFunctions, findHwb, findColorHex, getNameColor } from "./matchers"
+import { findColorFunctions, findHwb, findColorHex, getNameColor, findColorHexFlutter } from "./matchers"
 import { settings } from '.';
 
 export function parseDocumentColors(document: TextDocument, symbols: DocumentSymbol[]): ColorInformation[] {
@@ -16,5 +16,6 @@ export function parseDocumentColors(document: TextDocument, symbols: DocumentSym
   res.push(...findColorHex(document))
   res.push(...findColorFunctions(document))
   res.push(...findHwb(document))
+  res.push(...findColorHexFlutter(document))
   return res
 }
