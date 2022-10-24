@@ -1,10 +1,13 @@
 # coc-highlight
 
-Provide default highlight for [coc.nvim](https://github.com/neoclide/coc.nvim),
-including document highlight (highlight of current document symbol) and colors
-highlight.
+Provide filetype irrelevant highlights to [coc.nvim](https://github.com/neoclide/coc.nvim),
+including document highlight (highlight of current document symbol) and color
+highlights.
 
 <img width="480" alt="Screen Shot 2019-07-01 at 9 11 33 AM" src="https://user-images.githubusercontent.com/251450/60405074-979ae080-9be0-11e9-8039-b9a48fd8b5ad.png">
+
+**Important** the implementation from version 2.0.0 have changed from language
+server to worker threads, and only changed lines are calculated for colors.
 
 ## Install
 
@@ -16,10 +19,8 @@ In your vim/neovim, run command:
 
 ## Features
 
-- Highlight symbol of current position in all positions of current buffer (when no document
-  highlight provider exists from language server).
-- Highlight colors of current buffer (when no color provider exists from
-  language server).
+- Highlight the same word symbols of word under cursor.
+- Add color highlights to buffers when enabled.
 
 ## Usage
 
@@ -56,19 +57,19 @@ To pick a different color presentation, use command:
 
 ## Options
 
-- `highlight.disableLanguages`, List of filetypes to ignore for this extension.
-- `highlight.document.enable`, Set to `false` to disable document symbol
-  highlight.
-- `highlight.colors.enable`, Set to `false` to disable color highlight.
-- `highlight.colorNames.enable`, Set to `false` to disable highlight of color names.
+- `highlight.trace`: Trace level for colors highlight. default: `"messages"`
+  Valid options: ["off","messages","verbose"]
+- `highlight.disableLanguages`: List of filetypes to ignore. default: `[]`
+- `highlight.document.enable`: Set to false disable document highlight of current symbol, reload coc.nvim required on change, default: `true`
+- `highlight.colors.enable`: Set to false to disable color highlight, reload coc.nvim required on change, default: `true`
+- `highlight.colorNames.enable`: Set to false to disable highlight of color names, default: `true`
 
 ## F.A.Q
 
 **Q:** Why color highlight is not shown on my vim?
 
-**A:** First, make sure `"coc.preferences.colorSupport"` is not `false` in your
-`coc-settings.json`, then make sure you have `set termguicolors` in your `.vimrc`,
-and your terminal support true color.
+**A:** Enable verbose output by `"highlight.trace": "verbose"` in configuration file.
+Checkout the output by `:CocCommand workspace.showOutput highlight`
 
 **Q:** How to change highlight of the current symbol.
 

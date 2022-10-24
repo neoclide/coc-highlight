@@ -1,87 +1,88 @@
-import { ExtensionContext, LanguageClient, LanguageClientOptions, NotificationType, RequestType, ServerOptions, services, TransportKind, window, workspace } from 'coc.nvim';
-
-namespace FetchKeywordRequest {
-  export const type = new RequestType<
-    string,
-    string,
-    void,
-    void>('highlight/iskeyword')
-}
-
-const exitCalled = new NotificationType<[number, string], void>(
-  'highlight/exitCalled'
-)
-
-const keywordsMap: { [uri: string]: string } = {}
+import { CancellationToken, ExtensionContext, languages, Position, Range, TextDocument, window, workspace } from 'coc.nvim'
+import ColorBuffer from './bufferItem'
+import { Settings } from './types'
+import { WorkersManager } from './workers'
 
 export async function activate(context: ExtensionContext): Promise<void> {
-  let { subscriptions } = context
-  const config = workspace.getConfiguration('highlight')
-  const file = context.asAbsolutePath('./lib/server.js')
+  let { subscriptions, logger } = context
+  const workerFile = context.asAbsolutePath('./lib/worker.js')
+  const workers = new WorkersManager(workerFile, logger)
+  subscriptions.push(workers)
 
-  let serverOptions: ServerOptions = {
-    module: file,
-    args: ['--node-ipc'],
-    transport: TransportKind.ipc,
-    options: {
-      cwd: workspace.root,
-      execArgv: config.get<string[]>('execArgv', [])
+  let settings: Settings | undefined
+  function getSettings(): void {
+    const config = workspace.getConfiguration('highlight')
+    let conf = {
+      trace: config.get<'off' | 'messages' | 'verbose'>('trace', 'messages'),
+      highlightEnable: config.get('document.enable', true),
+      colorsEnable: config.get('colors.enable', true),
+      colorNamesEnable: config.get('colorNames.enable', true),
+      disableLanguages: config.get('disableLanguages', []),
+    }
+    if (settings) {
+      if (settings.colorsEnable != conf.colorsEnable) {
+        void window.showWarningMessage(`Reload window by :CocRestart required for change of highlight.colors.enable`)
+      }
+      Object.assign(settings, conf)
+    } else {
+      settings = conf
     }
   }
+  getSettings()
+  subscriptions.push(workspace.onDidChangeConfiguration(e => {
+    if (e.affectsConfiguration('highlight')) {
+      getSettings()
+    }
+  }))
 
-  let clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: '*' }, { pattern: '*' }],
-    synchronize: {
-      configurationSection: 'highlight'
-    },
-    outputChannelName: 'highlight'
+  const output = window.createOutputChannel('highlight')
+  subscriptions.push(output)
+  let bufferItems = workspace.registerBufferSync(doc => {
+    return new ColorBuffer(doc, settings, output, workers)
+  })
+  subscriptions.push(bufferItems)
+
+  function enableColors(): void {
+    subscriptions.push(languages.registerDocumentColorProvider(['*'], {
+      provideDocumentColors(document, token) {
+        let item = bufferItems.getItem(document.uri)
+        return item.getColorInformation(token)
+      },
+      provideColorPresentations: () => {
+        return null
+      }
+    }))
   }
 
-  let client = new LanguageClient('highlight', 'highlight server', serverOptions, clientOptions)
-
-  workspace.documents.forEach(async doc => {
-    let { buffer, uri } = doc
-    try {
-      let iskeyword = await buffer.getOption('iskeyword') as string
-      keywordsMap[uri] = iskeyword
-    } catch (e) {
-      // noop
+  function enableDocumentHighlight(): void {
+    if (typeof workspace.computeWordRanges !== 'function') {
+      output.appendLine(`workspace.computeWordRanges is not a function, please update coc.nvim.`)
+      return
     }
-  })
-
-  client.onReady().then(() => {
-
-    client.onRequest(FetchKeywordRequest.type, uri => {
-      return keywordsMap[uri] || '@,48-57,_'
-    })
-
-    client.onNotification(exitCalled, ([code, stack]): void => {
-      if (code != 0) {
-        window.showMessage(`highlight server exited with ${code}`)
+    subscriptions.push(languages.registerDocumentHighlightProvider(['*'], {
+      provideDocumentHighlights: async (textDocument: TextDocument, pos: Position, token: CancellationToken) => {
+        if (settings.disableLanguages.includes(textDocument.languageId)) return
+        let doc = workspace.getDocument(textDocument.uri)
+        if (!doc) return
+        let range = doc.getWordRangeAtPosition(pos)
+        if (!range) return
+        let line = doc.getline(pos.line)
+        let word = line.slice(range.start.character, range.end.character)
+        let sl = Math.max(0, pos.line - 300)
+        let el = Math.min(pos.line + 300, doc.lineCount)
+        let res = await workspace.computeWordRanges(doc.uri, Range.create(sl, 0, el, 0), token)
+        let ranges = res[word]
+        if (Array.isArray(ranges)) return ranges.map(r => {
+          return { range: r }
+        })
       }
-      if (stack) {
-        // tslint:disable-next-line:no-console
-        console.error(stack)
-      }
-    })
+    }))
+  }
 
-    workspace.onDidOpenTextDocument(async document => {
-      let doc = workspace.getDocument(document.uri)
-      if (!doc || doc.buftype != '') return
-      let { bufnr } = doc
-      let loaded = await workspace.nvim.call('bufloaded', bufnr) as number
-      if (loaded != 1) return
-      try {
-        let iskeyword = await doc.buffer.getOption('iskeyword') as string
-        keywordsMap[doc.uri] = iskeyword
-      } catch (e) {
-        // noop
-      }
-    }, null, subscriptions)
-  }, e => {
-    // tslint:disable-next-line:no-console
-    console.error(`highlight server start failed: ${e.message}`)
-  })
-  client.start()
-  subscriptions.push(services.registLanguageClient(client))
+  if (settings.colorsEnable) {
+    enableColors()
+  }
+  if (settings.highlightEnable) {
+    enableDocumentHighlight()
+  }
 }

@@ -1,6 +1,6 @@
 {
   "name": "coc-highlight",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "description": "Highlight extension for coc.nvim",
   "main": "lib/index.js",
   "publisher": "chemzqm",
@@ -10,12 +10,10 @@
     "colors"
   ],
   "engines": {
-    "coc": "^0.0.79"
+    "coc": "^0.0.82"
   },
   "scripts": {
-    "clean": "rimraf lib",
-    "build": "webpack",
-    "prepare": "webpack"
+    "prepare": "node esbuild.js"
   },
   "activationEvents": [
     "*"
@@ -25,21 +23,15 @@
       "type": "object",
       "title": "Highlight",
       "properties": {
-        "highlight.trace.server": {
+        "highlight.trace": {
           "type": "string",
-          "default": "off",
+          "default": "messages",
+          "description": "Trace level for colors highlight.",
           "enum": [
             "off",
             "messages",
             "verbose"
           ]
-        },
-        "highlight.execArgv": {
-          "type": "array",
-          "default": [],
-          "items": {
-            "type": "string"
-          }
         },
         "highlight.disableLanguages": {
           "type": "array",
@@ -47,22 +39,26 @@
           "items": {
             "type": "string"
           },
-          "description": "List of filetypes to ignore."
+          "description": "List of filetypes to ignore.",
+          "scope": "application"
         },
         "highlight.document.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Set to false disable document highlight of current symbol."
+          "description": "Set to false disable document highlight of current symbol, reload coc.nvim required on change",
+          "scope": "application"
         },
         "highlight.colors.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Set to false to disable color highlight."
+          "description": "Set to false to disable color highlight, reload coc.nvim required on change",
+          "scope": "application"
         },
         "highlight.colorNames.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Set to false to disable highlight of color names."
+          "description": "Set to false to disable highlight of color names.",
+          "scope": "application"
         }
       }
     }
@@ -74,20 +70,14 @@
     "@types/color": "^3.0.0",
     "@types/color-name": "^1.1.1",
     "@types/debounce": "^3.0.0",
-    "@types/node": "^11.13.10",
-    "coc.nvim": "^0.0.79-next.18",
+    "@types/node": "12.12",
+    "coc.nvim": "^0.0.83-next.7",
     "color": "^3.1.1",
     "color-name": "^1.1.4",
     "debounce": "^1.2.0",
-    "rimraf": "^2.6.3",
-    "ts-loader": "^6.0.3",
     "tslib": "^1.9.3",
-    "tslint": "^5.16.0",
-    "typescript": "^3.4.4",
-    "vscode-languageserver": "^5.3.0-next.5",
-    "vscode-languageserver-protocol": "^3.15.0-next.4",
-    "webpack": "^4.34.0",
-    "webpack-cli": "^3.3.4"
+    "esbuild": "^0.15.9",
+    "vscode-languageserver-protocol": "^3.15.0-next.4"
   },
   "dependencies": {}
 }
