@@ -68,8 +68,8 @@ To pick a different color presentation, use command:
 
 **Q:** Why color highlight is not shown on my vim?
 
-**A:** Enable verbose output by `"highlight.trace": "verbose"` in configuration file.
-Checkout the output by `:CocCommand workspace.showOutput highlight`
+**A:** For terminal vim, you have to enable 24-bit RGB color by `set termguicolors` and make sure your terminal support true colors. To make sure the
+highlight is not disabled, enable verbose output by `"highlight.trace": "verbose"` in configuration file and checkout the output by `:CocCommand workspace.showOutput highlight`.
 
 **Q:** How to change highlight of the current symbol.
 
