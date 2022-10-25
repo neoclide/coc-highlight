@@ -10,9 +10,17 @@ interface ParseColorOption {
 
 const WORKER_COUNT = Math.min(4, os.cpus().length)
 
+const createUID: () => number = (() => {
+  let id = 0
+  return () => {
+    return id++
+  }
+})()
+
 export class WorkersManager {
   private workers: WorkerItem[] = []
   private _disposed = false
+  private callbacks: Map<number, (res?: any, error?: Error) => void> = new Map()
   constructor(private file: string, private logger: Logger) {
     for (let i = 0; i < WORKER_COUNT; i++) {
       this.createWorker()
@@ -24,9 +32,36 @@ export class WorkersManager {
     let item = { busy: false, worker: worker }
     this.workers.push(item)
     worker.on('exit', () => {
-      if (!this._disposed) {
-        let idx = this.workers.findIndex(o => o === item)
-        if (idx !== -1) this.workers.splice(idx, 1)
+      if (this._disposed) return
+      let idx = this.workers.findIndex(o => o === item)
+      if (idx !== -1) this.workers.splice(idx, 1)
+
+    })
+    worker.on('message', value => {
+      let cb
+      if (typeof value.id === 'number') {
+        cb = this.callbacks.get(value.id)
+        if (cb) this.callbacks.delete(value.id)
+      }
+      if (value.kind === 'error') {
+        this.logger.error(`Worker error ${value.error}`, value.stack)
+        if (cb) {
+          let err = new Error(value.error)
+          if (value.stack) err.stack = value.stack
+          cb(undefined, err)
+        }
+      } else if (value.kind === 'result') {
+        if (cb) {
+          if (value.error) {
+            let err = new Error(value.error)
+            if (value.stack) err.stack = value.stack
+            cb(undefined, err)
+          } else {
+            cb(value.result)
+          }
+        }
+      } else {
+        this.logger.error(`Unknown message from worker`, value)
       }
     })
     return item
@@ -48,23 +83,18 @@ export class WorkersManager {
     let { worker } = item
     let exited = false
     let res = await new Promise((resolve, reject) => {
-      worker.postMessage({ kind: 'parse', colorNamesEnable: opts.colorNamesEnable, lines })
+      let id = createUID()
+      worker.postMessage({ id, kind: 'parse', colorNamesEnable: opts.colorNamesEnable, lines })
       let fn = () => {
+        this.callbacks.delete(id)
         exited = true
         resolve(undefined)
       }
       worker.once('exit', fn)
-      worker.once('message', value => {
+      this.callbacks.set(id, (result, error) => {
         worker.removeListener('exit', fn)
-        if (value.kind === 'error') {
-          this.logger.error(`Parse error ${value.error}`, value.stack)
-          reject(new Error(value.error))
-        } else if (value.kind === 'result') {
-          resolve(value.colors)
-        } else {
-          this.logger.error(`Unknown message from worker`, value)
-          resolve(undefined)
-        }
+        if (error) return reject(error)
+        resolve(result)
       })
     })
     item.busy = false

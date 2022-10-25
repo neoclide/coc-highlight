@@ -8,7 +8,7 @@ const colorHex = /(?<!&|\w)((?:#)([a-f0-9]{6}([a-f0-9]{2})?|[a-f0-9]{3}([a-f0-9]
 const colorFunctions = /(?:\b(rgb|hsl)a?\([\d]{1,3}(\.\d+)?%?,\s*[\d]{1,3}(\.\d+)?%?,\s*[\d]{1,3}(\.\d+)?%?(,\s*\d?\.?\d+)?\))/gi
 const colorHwb = /(?:\b(hwb)\(\d+,\s*(100|0*\d{1,2})%,\s*(100|0*\d{1,2})%(,\s*0?\.?\d+)?\))/gi
 const colorHexFlutter = /(?<=Color\(\s*0x)(?:[a-fA-F0-9]{1,8})(?=\s*\))/g
-const wordRegex = /\b(\w+)\b/g
+const wordRegex = /\b(\w+)\b/gi
 const MAX_DURATION = 1000
 
 export interface ColorItem {
@@ -17,31 +17,6 @@ export interface ColorItem {
    * 0 based character indexes
    */
   span: [number, number]
-}
-
-export function getNameColor(line: string): ColorItem[] {
-  wordRegex.lastIndex = 0
-  // return { red: c.red() / 255, green: c.green() / 255, blue: c.blue() / 255, alpha: 1 }
-  let result: ColorItem[] = []
-  let match = wordRegex.exec(line)
-  while (match !== null) {
-    const start = match.index
-    try {
-      let word = match[0]
-      if (names.includes(word)) {
-        const c = new Color(word)
-        result.push({
-          color: { red: c.red() / 255, green: c.green() / 255, blue: c.blue() / 255, alpha: c.alpha() },
-          span: [start, start + match[0].length]
-        })
-      }
-    } catch (e) {
-      onError(e)
-      break
-    }
-    match = wordRegex.exec(line)
-  }
-  return result
 }
 
 export function findColorHex(line: string): ColorItem[] {
@@ -74,7 +49,7 @@ export function findColorHexFlutter(line: string): ColorItem[] {
 function findColors(line: string, regex: RegExp, normalizeColorFormat?: (color: String) => String): ColorItem[] {
   let match = regex.exec(line)
   let result: ColorItem[] = []
-  while (match !== null) {
+  while (match != null) {
     const start = match.index
     try {
       if (normalizeColorFormat == undefined) normalizeColorFormat = (colorString) => colorString
@@ -86,9 +61,31 @@ function findColors(line: string, regex: RegExp, normalizeColorFormat?: (color: 
       })
     } catch (e) {
       onError(e)
-      break
     }
     match = regex.exec(line)
+  }
+  return result
+}
+
+export function getNameColor(line: string): ColorItem[] {
+  wordRegex.lastIndex = 0
+  let result: ColorItem[] = []
+  let match = wordRegex.exec(line)
+  while (match != null) {
+    const start = match.index
+    try {
+      let word = match[0]
+      if (names.includes(word)) {
+        const c = new Color(word)
+        result.push({
+          color: { red: c.red() / 255, green: c.green() / 255, blue: c.blue() / 255, alpha: c.alpha() },
+          span: [start, start + match[0].length]
+        })
+      }
+    } catch (e) {
+      onError(e)
+    }
+    match = wordRegex.exec(line)
   }
   return result
 }

@@ -3,9 +3,6 @@ import { BufferSyncItem, ColorInformation, CancellationTokenSource, DidChangeTex
 import { inspect } from 'util'
 import type { WorkersManager } from './workers'
 import { ColorItem, Settings } from './types'
-export const NAMESPACE = 'typos'
-
-export type CheckIgnored = (word: string) => boolean
 
 export default class ColorBuffer implements BufferSyncItem {
   private tokenSource = new CancellationTokenSource()
