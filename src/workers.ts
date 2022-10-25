@@ -28,9 +28,19 @@ export class WorkersManager {
   }
 
   private createWorker(): WorkerItem {
-    let worker = new Worker(this.file, { workerData: '' })
+    let worker = new Worker(this.file, {
+      stdout: true,
+      stderr: true
+    })
     let item = { busy: false, worker: worker }
     this.workers.push(item)
+    // let ts = Date.now()
+    // worker.on('online', () => {
+    //   this.logger.debug(`Worker started after ${Date.now() - ts}ms`)
+    // })
+    worker.on('error', err => {
+      this.logger.error(`Worker error ${err.message}`, err.stack)
+    })
     worker.on('exit', () => {
       if (this._disposed) return
       let idx = this.workers.findIndex(o => o === item)
@@ -84,7 +94,6 @@ export class WorkersManager {
     let exited = false
     let res = await new Promise((resolve, reject) => {
       let id = createUID()
-      worker.postMessage({ id, kind: 'parse', colorNamesEnable: opts.colorNamesEnable, lines })
       let fn = () => {
         this.callbacks.delete(id)
         exited = true
@@ -96,10 +105,12 @@ export class WorkersManager {
         if (error) return reject(error)
         resolve(result)
       })
+      worker.postMessage({ id, kind: 'parse', colorNamesEnable: opts.colorNamesEnable, lines })
     })
-    item.busy = false
     if (this.workers.length > WORKER_COUNT && !exited) {
-      item.worker.postMessage({ kind: 'exit' })
+      item.worker.terminate()
+    } else {
+      item.busy = false
     }
     return res as ReadonlyArray<ColorItem>[]
   }
@@ -115,7 +126,7 @@ export class WorkersManager {
   public dispose(): void {
     this._disposed = true
     this.workers.forEach(item => {
-      item.worker.postMessage({ kind: 'exit' })
+      item.worker.terminate()
     })
     this.workers = []
   }

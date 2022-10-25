@@ -19,22 +19,22 @@ export interface ColorItem {
   span: [number, number]
 }
 
-export function findColorHex(line: string): ColorItem[] {
+export function findColorHex(line: string, result: ColorItem[]): void {
   colorHex.lastIndex = 0
-  return findColors(line, colorHex)
+  findColors(line, colorHex, result)
 }
 
-export function findColorFunctions(line: string): ColorItem[] {
+export function findColorFunctions(line: string, result: ColorItem[]): void {
   colorFunctions.lastIndex = 0
-  return findColors(line, colorFunctions)
+  findColors(line, colorFunctions, result)
 }
 
-export function findHwb(line: string): ColorItem[] {
+export function findHwb(line: string, result: ColorItem[]): void {
   colorHwb.lastIndex = 0
-  return findColors(line, colorHwb)
+  findColors(line, colorHwb, result)
 }
 
-export function findColorHexFlutter(line: string): ColorItem[] {
+export function findColorHexFlutter(line: string, result: ColorItem[]): void {
   colorHexFlutter.lastIndex = 0
   let normalizeColorFormat = (colorString: string) => {
     colorString = colorString.padStart(8, "0")
@@ -43,12 +43,11 @@ export function findColorHexFlutter(line: string): ColorItem[] {
     let rgb = colorString.slice(2, 8)
     return "#" + rgb + alpha
   }
-  return findColors(line, colorHexFlutter, normalizeColorFormat)
+  findColors(line, colorHexFlutter, result, normalizeColorFormat)
 }
 
-function findColors(line: string, regex: RegExp, normalizeColorFormat?: (color: String) => String): ColorItem[] {
+function findColors(line: string, regex: RegExp, result: ColorItem[], normalizeColorFormat?: (color: String) => String): void {
   let match = regex.exec(line)
-  let result: ColorItem[] = []
   while (match != null) {
     const start = match.index
     try {
@@ -64,12 +63,10 @@ function findColors(line: string, regex: RegExp, normalizeColorFormat?: (color: 
     }
     match = regex.exec(line)
   }
-  return result
 }
 
-export function getNameColor(line: string): ColorItem[] {
+export function getNameColor(line: string, result: ColorItem[]): void {
   wordRegex.lastIndex = 0
-  let result: ColorItem[] = []
   let match = wordRegex.exec(line)
   while (match != null) {
     const start = match.index
@@ -87,7 +84,6 @@ export function getNameColor(line: string): ColorItem[] {
     }
     match = wordRegex.exec(line)
   }
-  return result
 }
 
 /**
@@ -101,7 +97,7 @@ export async function parseColors(lines: ReadonlyArray<string>, colorNamesEnable
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i]
     if (line.length > 2048) line = line.slice(0, 2048)
-    if ((i + 1) % 100 == 0) {
+    if ((i + 1) % 100 === 0) {
       let curr = Date.now()
       if (curr - prev > 15) {
         await waitImmediate()
@@ -111,12 +107,12 @@ export async function parseColors(lines: ReadonlyArray<string>, colorNamesEnable
     }
     let curItems: ColorItem[] = []
     if (colorNamesEnable) {
-      curItems.push(...getNameColor(line))
+      getNameColor(line, curItems)
     }
-    curItems.push(...findColorHex(line))
-    curItems.push(...findColorFunctions(line))
-    curItems.push(...findHwb(line))
-    curItems.push(...findColorHexFlutter(line))
+    findColorHex(line, curItems)
+    findColorFunctions(line, curItems)
+    findHwb(line, curItems)
+    findColorHexFlutter(line, curItems)
     res.push(curItems)
   }
   return res

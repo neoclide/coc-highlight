@@ -28,6 +28,7 @@ if (!isMainThread) {
       if (tokenSource) tokenSource.cancel()
       process.exit()
     } else if (value.kind === 'parse') {
+      if (tokenSource) tokenSource.cancel()
       tokenSource = new CancellationTokenSource()
       try {
         let res = await parseColors(value.lines, value.colorNamesEnable, tokenSource.token)
