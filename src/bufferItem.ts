@@ -10,7 +10,6 @@ export default class ColorBuffer implements BufferSyncItem {
    * typos for each line.
    */
   private colors: ReadonlyArray<ColorItem>[] | undefined
-  private colorFiletyps: string[] = []
   private mutex = new Mutex()
   constructor(
     private doc: Document,
@@ -18,22 +17,18 @@ export default class ColorBuffer implements BufferSyncItem {
     private output: OutputChannel,
     private manager: WorkersManager
   ) {
-    let colorConfig = workspace.getConfiguration('colors', doc.uri)
-    let colorFiletyps = this.colorFiletyps = colorConfig.get('filetypes', [])
     if (!this.config.colorsEnable) {
       this.warn(`Color highlight disabled by "highlight.colors.enable": false`)
-    } else if (!colorFiletyps.includes('*') && !colorFiletyps.includes(this.doc.filetype)) {
-      this.warn(`Color highlight of ${doc.uri} not enabeld by "colors.filetypes": ${JSON.stringify(colorFiletyps)}`)
     } else if (this.isDisabled) {
       this.warn(`Color highlight of ${doc.uri} ignored by "highlight.disableLanguages"`)
     }
-    void this.getColors()
   }
 
   public async getColorInformation(token: CancellationToken): Promise<ColorInformation[] | undefined> {
     let colors: ColorInformation[] | undefined
     let timer
     let disposable: Disposable
+    if (!this.colors) void this.getColors()
     await new Promise<void>(resolve => {
       disposable = token.onCancellationRequested(() => {
         resolve()
@@ -79,13 +74,11 @@ export default class ColorBuffer implements BufferSyncItem {
   private get isDisabled(): boolean {
     if (!this.config.colorsEnable) return true
     if (this.config.disableLanguages.includes(this.doc.filetype)) return true
-    let { colorFiletyps } = this
-    if (!colorFiletyps.includes('*') && !colorFiletyps.includes(this.doc.filetype)) return true
     return false
   }
 
   public onChange(e: DidChangeTextDocumentParams): void {
-    if (e.contentChanges.length == 0) return
+    if (e.contentChanges.length == 0 || !this.colors) return
     void this.getColors(e)
   }
 

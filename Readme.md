@@ -36,7 +36,7 @@ configurable delayed highlighting independently from the user's `updatetime` set
 To add colors support for all filetypes, use:
 
 ```json
-"colors.filetypes": ["*"],
+"colors.enable": true,
 ```
 
 to your `settings.json`.
