@@ -35,9 +35,7 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        run: |
-          npm install --global yarn@1.22.22
-          yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Install editors
         run: |

@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: yarn
+          cache: npm
 
       - name: Install editors
         run: |
@@ -29,10 +29,10 @@ jobs:
           sudo apt-get install -y neovim vim
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Type check
-        run: yarn lint
+        run: npm run lint
 
       - name: Download coc.nvim
         run: |
@@ -43,4 +43,4 @@ jobs:
           echo "COC_TEST_COC_PATH=$RUNNER_TEMP/coc.nvim" >> "$GITHUB_ENV"
 
       - name: Test with ${{ matrix.editor }}
-        run: yarn test:${{ matrix.editor }}
+        run: npm run test:${{ matrix.editor }}
