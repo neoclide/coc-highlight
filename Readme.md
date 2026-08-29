@@ -1,5 +1,7 @@
 # coc-highlight
 
+<p align="center"><img src="assets/coc-highlight-logo.png" alt="coc-highlight logo" width="180"></p>
+
 [![CI](https://github.com/neoclide/coc-highlight/actions/workflows/ci.yml/badge.svg)](https://github.com/neoclide/coc-highlight/actions/workflows/ci.yml)
 
 Provide filetype irrelevant highlights to [coc.nvim](https://github.com/neoclide/coc.nvim),
