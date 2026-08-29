@@ -4,6 +4,10 @@
   "description": "Highlight extension for coc.nvim",
   "main": "lib/index.js",
   "publisher": "chemzqm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neoclide/coc-highlight.git"
+  },
   "keywords": [
     "coc.nvim",
     "highlight",
@@ -13,7 +17,12 @@
     "coc": "^0.0.82"
   },
   "scripts": {
-    "prepare": "node esbuild.js"
+    "build": "node esbuild.js",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "prepare": "node esbuild.js",
+    "test": "coc-test --nvim \"test/**/*.test.ts\"",
+    "test:nvim": "coc-test --nvim \"test/**/*.test.ts\"",
+    "test:vim": "coc-test --vim \"test/**/*.test.ts\""
   },
   "activationEvents": [
     "*"
@@ -71,13 +80,17 @@
     "@types/color-name": "^1.1.1",
     "@types/debounce": "^3.0.0",
     "@types/node": "^14.17",
+    "coc-test": "^0.2.0",
     "coc.nvim": "^0.0.83-next.7",
     "color": "^4.2.3",
     "color-name": "^1.1.4",
     "debounce": "^1.2.0",
-    "tslib": "^1.9.3",
     "esbuild": "^0.15.9",
+    "tslib": "^1.9.3",
     "vscode-languageserver-protocol": "^3.15.0-next.4"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "coc-test": {
+    "entryFile": "src/index.ts"
+  }
 }

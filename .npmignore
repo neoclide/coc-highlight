@@ -5,3 +5,6 @@ tslint.json
 server
 yarn.lock
 tests
+test
+.github
+AGENTS.md

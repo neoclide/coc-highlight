@@ -3,7 +3,7 @@ import webColors from 'color-name'
 import { Color as VSColor, CancellationToken } from 'vscode-languageserver-protocol'
 import { onError, waitImmediate } from './util'
 
-const names = Object.keys(webColors)
+const names = new Set(Object.keys(webColors))
 const colorHex = /(?<!&|\w)((?:#)([a-f0-9]{6}([a-f0-9]{2})?|[a-f0-9]{3}([a-f0-9]{1})?))\b/gi
 const colorFunctions = /(?:\b(rgb|hsl)a?\([\d]{1,3}(\.\d+)?%?,\s*[\d]{1,3}(\.\d+)?%?,\s*[\d]{1,3}(\.\d+)?%?(,\s*\d?\.?\d+)?\))/gi
 const colorHwb = /(?:\b(hwb)\(\d+,\s*(100|0*\d{1,2})%,\s*(100|0*\d{1,2})%(,\s*0?\.?\d+)?\))/gi
@@ -72,11 +72,12 @@ export function getNameColor(line: string, result: ColorItem[]): void {
     const start = match.index
     try {
       let word = match[0]
-      if (names.includes(word)) {
-        const c = new Color(word)
+      let normalized = word.toLowerCase()
+      if (names.has(normalized)) {
+        const c = new Color(normalized)
         result.push({
           color: { red: c.red() / 255, green: c.green() / 255, blue: c.blue() / 255, alpha: c.alpha() },
-          span: [start, start + match[0].length]
+          span: [start, start + word.length]
         })
       }
     } catch (e) {
@@ -89,20 +90,19 @@ export function getNameColor(line: string, result: ColorItem[]): void {
 /**
  * Color items for each line.
  */
-export async function parseColors(lines: ReadonlyArray<string>, colorNamesEnable: boolean, token: CancellationToken): Promise<(readonly ColorItem[])[]> {
+export async function parseColors(lines: ReadonlyArray<string>, colorNamesEnable: boolean, token: CancellationToken): Promise<(readonly ColorItem[])[] | undefined> {
   let res: ReadonlyArray<ColorItem>[] = []
   let start = Date.now()
   let prev = Date.now()
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i]
-    if (line.length > 2048) line = line.slice(0, 2048)
-    if ((i + 1) % 100 === 0) {
-      let curr = Date.now()
-      if (curr - prev > 15) {
-        await waitImmediate()
-        prev = curr
-      }
+    let curr = Date.now()
+    if (token.isCancellationRequested || curr - start > MAX_DURATION) return
+    if (curr - prev > 15) {
+      await waitImmediate()
+      curr = Date.now()
+      prev = curr
       if (token.isCancellationRequested || curr - start > MAX_DURATION) return
     }
     let curItems: ColorItem[] = []
@@ -113,6 +113,8 @@ export async function parseColors(lines: ReadonlyArray<string>, colorNamesEnable
     findColorFunctions(line, curItems)
     findHwb(line, curItems)
     findColorHexFlutter(line, curItems)
+    curr = Date.now()
+    if (token.isCancellationRequested || curr - start > MAX_DURATION) return
     res.push(curItems)
   }
   return res

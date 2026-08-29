@@ -21,18 +21,11 @@ export class WorkersManager {
   private workers: WorkerItem[] = []
   private _disposed = false
   private callbacks: Map<number, (res?: any, error?: Error) => void> = new Map()
-  constructor(private file: string, private logger: Logger) {
-    for (let i = 0; i < WORKER_COUNT; i++) {
-      this.createWorker()
-    }
-  }
+  constructor(private file: string, private logger: Logger) { }
 
   private createWorker(): WorkerItem {
-    let worker = new Worker(this.file, {
-      stdout: true,
-      stderr: true
-    })
-    let item = { busy: false, worker: worker }
+    let worker = new Worker(this.file)
+    let item: WorkerItem = { busy: false, worker: worker }
     this.workers.push(item)
     // let ts = Date.now()
     // worker.on('online', () => {
@@ -40,6 +33,14 @@ export class WorkersManager {
     // })
     worker.on('error', err => {
       this.logger.error(`Worker error ${err.message}`, err.stack)
+      let id = item.requestId
+      if (typeof id === 'number') {
+        let cb = this.callbacks.get(id)
+        if (cb) {
+          this.callbacks.delete(id)
+          cb(undefined, err)
+        }
+      }
     })
     worker.on('exit', () => {
       if (this._disposed) return
@@ -72,13 +73,18 @@ export class WorkersManager {
         }
       } else {
         this.logger.error(`Unknown message from worker`, value)
+        if (cb) {
+          let err = new Error(`Unknown message from worker`)
+          cb(undefined, err)
+        }
       }
     })
+    worker.unref()
     return item
   }
 
   private getWorker(bufnr: number): WorkerItem {
-    let item = this.workers.find(o => o.bufnr === bufnr)
+    let item = this.workers.find(o => o.bufnr === bufnr && !o.busy)
     if (item) return item
     item = this.workers.find(o => !o.busy)
     if (item) return item
@@ -87,39 +93,66 @@ export class WorkersManager {
   }
 
   public async parseLines(bufnr: number, lines: ReadonlyArray<string>, opts: ParseColorOption): Promise<(ReadonlyArray<ColorItem>)[] | undefined> {
+    if (this._disposed) return undefined
     let item = this.getWorker(bufnr)
     item.bufnr = bufnr
     item.busy = true
     let { worker } = item
-    let exited = false
-    let res = await new Promise((resolve, reject) => {
-      let id = createUID()
-      let fn = () => {
-        this.callbacks.delete(id)
-        exited = true
-        resolve(undefined)
+    worker.ref()
+    let id = createUID()
+    item.requestId = id
+    try {
+      return await new Promise((resolve, reject) => {
+        let settled = false
+        let callback: (res?: any, error?: Error) => void
+        let cleanup = () => {
+          worker.removeListener('exit', onExit)
+          if (this.callbacks.get(id) === callback) this.callbacks.delete(id)
+        }
+        let settle = (result?: any, error?: Error) => {
+          if (settled) return
+          settled = true
+          cleanup()
+          if (error) reject(error)
+          else resolve(result)
+        }
+        let onExit = () => settle(undefined)
+        callback = settle
+        worker.once('exit', onExit)
+        this.callbacks.set(id, callback)
+        try {
+          worker.postMessage({ id, kind: 'parse', colorNamesEnable: opts.colorNamesEnable, lines })
+        } catch (e) {
+          let error = e instanceof Error ? e : new Error(String(e))
+          settle(undefined, error)
+        }
+      }) as (ReadonlyArray<ColorItem>)[] | undefined
+    } finally {
+      if (item.requestId === id) {
+        item.requestId = undefined
+        item.busy = false
+        if (this.workers.length > WORKER_COUNT) {
+          let idx = this.workers.indexOf(item)
+          if (idx !== -1) {
+            this.workers.splice(idx, 1)
+            void item.worker.terminate()
+          }
+        } else if (this.workers.includes(item)) {
+          item.worker.unref()
+        }
       }
-      worker.once('exit', fn)
-      this.callbacks.set(id, (result, error) => {
-        worker.removeListener('exit', fn)
-        if (error) return reject(error)
-        resolve(result)
-      })
-      worker.postMessage({ id, kind: 'parse', colorNamesEnable: opts.colorNamesEnable, lines })
-    })
-    if (this.workers.length > WORKER_COUNT && !exited) {
-      item.worker.terminate()
-    } else {
-      item.busy = false
     }
-    return res as ReadonlyArray<ColorItem>[]
   }
 
   public cancel(bufnr: number): void {
-    let item = this.workers.find(o => o.bufnr === bufnr)
-    if (item) {
-      item.worker.postMessage({ kind: 'cancel' })
-      item.busy = false
+    for (let item of this.workers) {
+      if (item.bufnr === bufnr && typeof item.requestId === 'number') {
+        try {
+          item.worker.postMessage({ kind: 'cancel', id: item.requestId })
+        } catch (e) {
+          this.logger.error(`Worker cancel error`, e)
+        }
+      }
     }
   }
 
@@ -129,5 +162,7 @@ export class WorkersManager {
       item.worker.terminate()
     })
     this.workers = []
+    for (let cb of this.callbacks.values()) cb()
+    this.callbacks.clear()
   }
 }

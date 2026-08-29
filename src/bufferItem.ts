@@ -1,15 +1,19 @@
 'use strict'
-import { BufferSyncItem, ColorInformation, CancellationTokenSource, DidChangeTextDocumentParams, Document, Mutex, OutputChannel, workspace, Range, CancellationToken, Disposable } from 'coc.nvim'
+import { BufferSyncItem, CancellationToken, ColorInformation, DidChangeTextDocumentParams, Disposable, Document, Mutex, OutputChannel, Range } from 'coc.nvim'
 import { inspect } from 'util'
 import type { WorkersManager } from './workers'
 import { ColorItem, Settings } from './types'
 
-export default class ColorBuffer implements BufferSyncItem {
-  private tokenSource = new CancellationTokenSource()
+export class ColorBuffer implements BufferSyncItem {
   /**
-   * typos for each line.
+   * Colors for each line.
    */
   private colors: ReadonlyArray<ColorItem>[] | undefined
+  private parsedVersion: number | undefined
+  private requested = false
+  private disposed = false
+  private configVersion = 0
+  private pending = new Set<string>()
   private mutex = new Mutex()
   constructor(
     private doc: Document,
@@ -25,25 +29,34 @@ export default class ColorBuffer implements BufferSyncItem {
   }
 
   public async getColorInformation(token: CancellationToken): Promise<ColorInformation[] | undefined> {
+    if (this.disposed || this.isDisabled || token.isCancellationRequested) return
+    this.requested = true
     let colors: ColorInformation[] | undefined
-    let timer
-    let disposable: Disposable
-    if (!this.colors) void this.getColors()
+    let timer: NodeJS.Timeout | undefined
+    let disposable: Disposable | undefined
+    if (!this.colors || this.parsedVersion !== this.doc.textDocument.version) this.scheduleColors()
     await new Promise<void>(resolve => {
-      disposable = token.onCancellationRequested(() => {
-        resolve()
-      })
-      timer = setTimeout(() => {
-        resolve()
-      }, 1000)
-      let clean = () => {
-        clearTimeout(timer)
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        if (timer) clearTimeout(timer)
         if (disposable) disposable.dispose()
+        resolve()
       }
+      timer = setTimeout(() => {
+        finish()
+      }, 1000)
+      disposable = token.onCancellationRequested(() => {
+        finish()
+      })
       this.mutex.acquire().then(release => {
-        clean()
         release()
-        if (this.colors) {
+        if (!token.isCancellationRequested
+          && !this.disposed
+          && !this.isDisabled
+          && this.colors
+          && this.parsedVersion === this.doc.textDocument.version) {
           colors = []
           for (let i = 0; i < this.colors.length; i++) {
             let arr = this.colors[i]
@@ -55,19 +68,15 @@ export default class ColorBuffer implements BufferSyncItem {
             }
           }
         }
-        resolve()
+        finish()
       }, () => {
-        clean()
-        resolve()
+        finish()
       })
     })
     return colors
   }
 
   private cancel(): void {
-    if (this.tokenSource) {
-      this.tokenSource.cancel()
-    }
     this.manager.cancel(this.doc.bufnr)
   }
 
@@ -77,9 +86,16 @@ export default class ColorBuffer implements BufferSyncItem {
     return false
   }
 
+  public onConfigurationChange(): void {
+    this.configVersion++
+    this.resetColors()
+    this.cancel()
+    if (this.requested && !this.isDisabled) this.scheduleColors()
+  }
+
   public onChange(e: DidChangeTextDocumentParams): void {
-    if (e.contentChanges.length == 0 || !this.colors) return
-    void this.getColors(e)
+    if (!this.requested || this.disposed || e.contentChanges.length === 0) return
+    this.scheduleColors(e)
   }
 
   private checkColorsList(list: (ReadonlyArray<ColorItem>)[], start: number): void {
@@ -90,40 +106,88 @@ export default class ColorBuffer implements BufferSyncItem {
     this.debug(`Parsed ${n} colors from buffer ${this.doc.bufnr} cost ${Date.now() - start}ms`)
   }
 
-  private async getColors(e?: DidChangeTextDocumentParams): Promise<void> {
+  private scheduleColors(e?: DidChangeTextDocumentParams): void {
     let { doc } = this
     if (!doc.attached || this.isDisabled) return
+    const textDocument = doc.textDocument
+    const lines = textDocument.lines
+    const version = textDocument.version
+    const configVersion = this.configVersion
+    const colorNamesEnable = this.config.colorNamesEnable
+    const key = `${configVersion}:${version}`
+    if (this.pending.has(key)) return
+    this.pending.add(key)
+    const changeEvent = e?.textDocument.version === version ? e : undefined
+    void this.getColors(lines, version, configVersion, colorNamesEnable, changeEvent).finally(() => {
+      this.pending.delete(key)
+    })
+  }
+
+  private async getColors(
+    lines: ReadonlyArray<string>,
+    version: number,
+    configVersion: number,
+    colorNamesEnable: boolean,
+    e?: DidChangeTextDocumentParams
+  ): Promise<void> {
+    let { doc } = this
     let { bufnr } = doc
-    let textDocument = doc.textDocument
     await this.mutex.use(async () => {
-      if (!doc.attached) return
+      if (!doc.attached || this.disposed || configVersion !== this.configVersion) return
       try {
         let st = Date.now()
-        if (!this.colors) {
-          let len = textDocument.lines.length
-          let colorsList = await this.manager.parseLines(bufnr, textDocument.lines, { colorNamesEnable: this.config.colorNamesEnable })
-          if (colorsList && colorsList.length == len) {
-            this.colors = colorsList
-            this.checkColorsList(colorsList, st)
-          }
-        } else if (e) {
-          let { range, text } = e.contentChanges[0]
+        const change = e?.contentChanges.length === 1 ? e.contentChanges[0] : undefined
+        const canIncrement = change?.range
+          && this.colors
+          && this.parsedVersion === version - 1
+          && this.colors.length === e.originalLines.length
+        if (canIncrement) {
+          let { range, text } = change
           let { start, end } = range
           let sl = start.line
           let el = end.line
-          let del = el - sl
-          let newLines = textDocument.lines.slice(sl, sl + text.split(/\n/).length)
-          let colorsList = await this.manager.parseLines(bufnr, newLines, { colorNamesEnable: this.config.colorNamesEnable })
-          if (colorsList && colorsList.length === newLines.length) {
-            this.colors.splice(sl, del + 1, ...colorsList)
+          let deleteCount = el - sl + 1
+          let newLines = lines.slice(sl, sl + text.split(/\n/).length)
+          const expectedLength = this.colors.length - deleteCount + newLines.length
+          if (expectedLength === lines.length) {
+            let colorsList = await this.manager.parseLines(bufnr, newLines, { colorNamesEnable })
+            if (this.disposed || configVersion !== this.configVersion) return
+            if (!colorsList || colorsList.length !== newLines.length) {
+              this.resetColors()
+              return
+            }
+            const next = this.colors.slice()
+            next.splice(sl, deleteCount, ...colorsList)
+            if (next.length !== lines.length) {
+              this.resetColors()
+              return
+            }
+            this.colors = next
+            this.parsedVersion = version
             this.checkColorsList(colorsList, st)
+            return
           }
         }
+        let colorsList = await this.manager.parseLines(bufnr, lines, { colorNamesEnable })
+        if (this.disposed || configVersion !== this.configVersion) return
+        if (!colorsList || colorsList.length !== lines.length) {
+          this.resetColors()
+          return
+        }
+        this.colors = colorsList
+        this.parsedVersion = version
+        this.checkColorsList(colorsList, st)
       } catch (err) {
+        this.resetColors()
         if (err instanceof Error && err.message.includes('Cancelled')) return
         this.error(`Error on getColors`, err)
       }
     })
+  }
+
+  private resetColors(): void {
+    this.colors = undefined
+    this.parsedVersion = undefined
   }
 
   public info(message: string, data?: any): void {
@@ -164,10 +228,15 @@ export default class ColorBuffer implements BufferSyncItem {
     return inspect(data, { maxArrayLength: 5 })
   }
 
-  public dispose() {
+  public dispose(): void {
+    this.disposed = true
+    this.configVersion++
+    this.resetColors()
     this.cancel()
   }
 }
+
+export default ColorBuffer
 
 export function now(): string {
   const now = new Date()

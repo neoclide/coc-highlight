@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.editor }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        editor: [nvim, vim]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: yarn
+
+      - name: Install editors
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y neovim vim
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Type check
+        run: yarn lint
+
+      - name: Download coc.nvim
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/coc.nvim"
+          curl -fsSL -o "$RUNNER_TEMP/coc.nvim.tar.gz" https://github.com/neoclide/coc.nvim/archive/refs/heads/release.tar.gz
+          tar -xzf "$RUNNER_TEMP/coc.nvim.tar.gz" --strip-components=1 -C "$RUNNER_TEMP/coc.nvim"
+          echo "COC_TEST_COC_PATH=$RUNNER_TEMP/coc.nvim" >> "$GITHUB_ENV"
+
+      - name: Test with ${{ matrix.editor }}
+        run: yarn test:${{ matrix.editor }}

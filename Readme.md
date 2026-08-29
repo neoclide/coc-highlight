@@ -1,5 +1,7 @@
 # coc-highlight
 
+[![CI](https://github.com/neoclide/coc-highlight/actions/workflows/ci.yml/badge.svg)](https://github.com/neoclide/coc-highlight/actions/workflows/ci.yml)
+
 Provide filetype irrelevant highlights to [coc.nvim](https://github.com/neoclide/coc.nvim),
 including document highlight (highlight of current document symbol) and color
 highlights.
@@ -22,6 +24,9 @@ In your vim/neovim, run command:
 - Highlight the same word symbols of word under cursor.
 - Add color highlights to buffers when enabled.
 
+Document symbol highlighting requires a recent coc.nvim build that provides
+`workspace.computeWordRanges`; color highlighting remains available on older builds.
+
 ## Usage
 
 To enable highlight current symbol on `CursorHold`, add:
@@ -33,10 +38,12 @@ autocmd CursorHold * silent call CocActionAsync('highlight')
 to your `.vimrc` or use the [coc_current_word plugin](https://github.com/IngoMeyer441/coc_current_word) which provides
 configurable delayed highlighting independently from the user's `updatetime` setting.
 
-To add colors support for all filetypes, use:
+Color highlighting is enabled for all filetypes by default. To enable it explicitly, use:
 
 ```json
-"colors.enable": true,
+{
+  "highlight.colors.enable": true
+}
 ```
 
 to your `settings.json`.

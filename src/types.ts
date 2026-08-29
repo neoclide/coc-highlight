@@ -20,6 +20,6 @@ export interface ColorItem {
 export interface WorkerItem {
   busy: boolean
   bufnr?: number
+  requestId?: number
   worker: Worker
 }
-
