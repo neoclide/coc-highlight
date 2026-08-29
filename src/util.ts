@@ -17,9 +17,11 @@ export function updateSettings(obj: { colorNamesEnable: boolean }): void {
   Object.assign(settings, obj)
 }
 
-export function onError(e: Error): void {
+export function onError(e: unknown): void {
   if (inWorker) {
-    parentPort.postMessage({ kind: 'error', error: e.message, stack: e.stack })
+    let error = e instanceof Error ? e.message : String(e)
+    let stack = e instanceof Error ? e.stack : undefined
+    parentPort.postMessage({ kind: 'error', error, stack })
   } else {
     console.error(e)
   }

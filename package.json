@@ -87,10 +87,14 @@
     "debounce": "^1.2.0",
     "esbuild": "^0.28.0",
     "tslib": "^1.9.3",
+    "typescript": "^6.0.3",
     "vscode-languageserver-protocol": "^3.18.2"
   },
   "dependencies": {},
   "coc-test": {
     "entryFile": "src/index.ts"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }
