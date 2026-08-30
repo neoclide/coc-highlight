@@ -49,7 +49,7 @@ jobs:
 
           archive="$(mktemp "${RUNNER_TEMP}/coc.nvim.release.XXXXXX")"
           coc_path="$(mktemp -d "${RUNNER_TEMP}/coc.nvim.release.XXXXXX")"
-          trap 'rm -f "$archive"; rm -rf "$coc_path"' EXIT
+          trap 'rm -f "$archive"' EXIT
 
           curl --fail --location --retry 3 \
             --header "Accept: application/vnd.github+json" \
@@ -58,6 +58,7 @@ jobs:
             --output "$archive" \
             https://api.github.com/repos/neoclide/coc.nvim/tarball/release
           tar -xzf "$archive" --strip-components=1 -C "$coc_path"
+          test -s "$coc_path/build/index.js"
           printf 'COC_TEST_COC_PATH=%s\n' "$coc_path" >> "$GITHUB_ENV"
 
       - name: Build
